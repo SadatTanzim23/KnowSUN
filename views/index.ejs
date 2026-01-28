@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="title" content="Home, Is sunscreen needed?">
+  <meta property="description" content="Based on location this app will tell you if sunscreen is needed">
+  <title>KnowSUN</title>
+  <link rel="stylesheet" href="/styles/main.css" />
+  <!--Map Links for free use-->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet">
+
+</head>
+
+<body><!--First main div withe the log and name-->
+  <div class="container">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/styles/logo.png" alt="KnowSUN logo">
+        <div class="brand-text">
+          <h1 class="logo-text">knowSUN</h1>
+          <p>Because the sun doesn’t guess—why should you?</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="card"><!--The search bar with the button-->
+      <div class="card-inner">
+        <form action="/KnowSUN" method="GET" class="search">
+          <div class="field">
+            <label for="loc">Location</label>
+            <input type="text" id="loc" name="location" placeholder="Toronto, ON" required>
+          </div>
+          <button type="submit">Check UV</button>
+        </form>
+
+        <!--The map on the scree-->
+        <div class="map-wrap">
+          <div id="map"></div>
+          <p class="map-hint">Map shows the coordinates used for the UV check.</p>
+        </div>
+
+        <!--error handling if the location doesnt exist-->
+        <% if (error) { %>
+          <div class="notice">
+            <strong>Couldn’t fetch UV data.</strong>
+            <div class="notice-small"><%= typeof error === "string" ? error : JSON.stringify(error) %></div>
+          </div>
+        <% } %>
+
+        <!--results if the lcoatino works-->
+        <% if (data && data.result) { 
+            const uv = Number(data.result.uv);
+            const uvMax = Number(data.result.uv_max);
+            const threshold = 3; // UV 3+ => protection recommended
+            const sunscreenNeeded = uv >= threshold;
+
+            //Message to the user
+            let title, detail;
+            if (sunscreenNeeded) {
+              title = "Sunscreen recommended";
+              detail = "UV is at a level where sun protection is advised. Apply broad-spectrum SPF 30+ and reapply if staying outside.";
+            } else {
+              title = "Sunscreen not needed right now";
+              detail = "UV is currently low. If you’ll be outside later, check again closer to midday.";
+            }
+        %>
+
+        <!--From here one everything is basicaly the desig. of the result card at the botton of the map-->
+          <section class="result-card <%= sunscreenNeeded ? "need" : "ok" %>">
+            <div class="result-head">
+              <div class="pill">
+                <span class="dot"></span>
+                <span><%= title %></span>
+              </div>
+
+              <h2 class="result-title"><%= title %></h2>
+              <p class="result-detail"><%= detail %></p>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <div class="k">Current UV</div>
+                <div class="v"><%= uv %></div>
+              </div>
+              <div class="metric">
+                <div class="k">Today’s peak UV</div>
+                <div class="v"><%= isNaN(uvMax) ? "—" : uvMax.toFixed(2) %></div>
+              </div>
+              <div class="metric">
+                <div class="k">Last updated (UTC)</div>
+                <div class="v small"><%= data.result.uv_time %></div>
+              </div>
+            </div>
+          </section>
+
+        <% } else { %>
+          <section class="empty">
+            <div class="empty-title">No result yet</div>
+            <div class="empty-text">Enter a location to get your UV reading and sunscreen guidance.</div>
+          </section>
+        <% } %>
+
+      </div>
+    </main>
+  </div>
+
+  <!--JS for leaf left-->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!--Map initialization with lat and lang-->
+  <script>
+    const coords = <%- JSON.stringify({
+      lat: typeof lat !== "undefined" ? lat : 43.6532,
+      lng: typeof lng !== "undefined" ? lng : -79.3832
+    }) %>;
+
+    const map = L.map('map').setView([coords.lat, coords.lng], 11);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    L.marker([coords.lat, coords.lng]).addTo(map)
+      .bindPopup("UV check location")
+      .openPopup();
+  </script>
+
+</body>
+</html>
