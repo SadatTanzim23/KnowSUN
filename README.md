@@ -1,4 +1,4 @@
-KnowSUN
+# KnowSUN
 A website built to help you decide if you need sunscreen -- Before stepping out.
 
 By using real-time UV index data, KnowSun tells users when sun protection is recommended, helping reduce sunburn risk and improve daily skin safety habits.
